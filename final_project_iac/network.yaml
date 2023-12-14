@@ -10,23 +10,18 @@ Parameters:
   VpcCIDR:
     Type: String
     Description: VPC CIDR block
-    # Default: 10.0.0.0/16
   PublicSubnet1CIDR:
     Type: String
     Description: Public Subnet1 CIDR block
-    # Default: 10.0.1.0/24
   PublicSubnet2CIDR:
     Type: String
     Description: Public Subnet2 CIDR block
-    # Default: 10.0.2.0/24
   PrivateSubnet1CIDR:
     Type: String
     Description: Private Subnet1 CIDR block
-    # Default: 10.0.3.0/24
   PrivateSubnet2CIDR:
     Type: String
     Description: Private Subnet2 CIDR block
-    # Default: 10.0.4.0/24
 
 Resources:
 # VPC
@@ -65,6 +60,7 @@ Resources:
           Value: !Sub ${Project}-nat-gateway-1
         - Key: ProjectName
           Value: !Ref ProjectName
+
   NatGateway1EIP:
     Type: AWS::EC2::EIP
     DependsOn: InternetGatewayAttachment
@@ -73,6 +69,7 @@ Resources:
       Tags: 
         - Key: Name 
           Value: !Sub ${Project}-nat-gateway-1
+
   NatGateway2: 
     Type: AWS::EC2::NatGateway
     Properties:
@@ -81,6 +78,7 @@ Resources:
       Tags: 
         - Key: Name 
           Value: !Sub ${Project}-nat-gateway-2
+
   NatGateway2EIP:
     Type: AWS::EC2::EIP
     DependsOn: InternetGatewayAttachment
@@ -89,7 +87,6 @@ Resources:
       Tags: 
         - Key: Name 
           Value: !Sub ${Project}-nat-gateway-2
-
 # Route Tables
   PublicRouteTable:
     Type: AWS::EC2::RouteTable
@@ -174,6 +171,7 @@ Resources:
           Value: !Sub "${Project}-public1"
         - Key: ProjectName
           Value: !Ref ProjectName
+
   PublicSubnet2: 
     Type: AWS::EC2::Subnet
     Properties:
@@ -186,6 +184,7 @@ Resources:
           Value: !Sub "${Project}-public2"
         - Key: ProjectName
           Value: !Ref ProjectName
+
 # Private Subnet Resources
   PrivateSubnet1: 
     Type: AWS::EC2::Subnet
@@ -198,6 +197,7 @@ Resources:
           Value: !Sub "${Project}-private1"
         - Key: ProjectName
           Value: !Ref ProjectName
+          
   PrivateSubnet2: 
     Type: AWS::EC2::Subnet
     Properties:

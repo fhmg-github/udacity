@@ -1,3 +1,3 @@
 # Udacity
 
-Here you will find the contribuition to the course content and the solution for the projects.
+Udacity - Deploy a high-availability web app using CloudFormation

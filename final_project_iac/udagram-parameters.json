@@ -21,7 +21,7 @@
     },
     {
         "ParameterKey": "HomeIpAdress",
-        "ParameterValue": "0.0.0.0/0"
+        "ParameterValue": "52.89.6.25/32"
     },
     {
         "ParameterKey": "AsgMinSize",
