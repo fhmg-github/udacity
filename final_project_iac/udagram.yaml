@@ -1,0 +1,295 @@
+Parameters:
+
+  Project:
+    Type: String
+    Description: Tag name for our resources
+  ProjectName:
+    Type: String
+    Description: Tag name for our resources
+  AMI:
+    Type: String
+    Description: AMI ID for Ubuntu22 - us-east-1 region
+    # Default: ami-0fc5d935ebf8bc3bc
+  EC2InstanceType:
+    Type: String
+    Description: Instance type to be used project-wide
+    # Default: t2.micro
+  EC2KeyPairName:
+    Type: String
+    Description: keypair name to access EC2 Instances
+    # Default: FinalProject-accessEC2Instances
+  HomeIpAdress:
+    Type: String
+    Description: Home IP Adress from where SSH access is originated to access bastion host
+    # Default: 50.98.146.6/32
+  AsgMinSize:
+    Type: String
+    Description: Min capacity for the fleet of instances
+    # Default: "1"
+  AsgDesiredCapacity:
+    Type: String
+    Description: Desired capacity for the fleet of instances
+    # Default: "4"
+  AsgMaxSize:
+    Type: String
+    Description: Max capacity for the fleet of instances
+    # Default: "4"
+  BucketName:
+    Type: String
+    Description: Bucket Name for the final project
+    # Default: "iac-udacity-final-project-0000"
+
+Resources:
+
+# Auto Scaling Group resources
+  SecurityGroupASG:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      VpcId:
+        Fn::ImportValue:
+          !Sub "${Project}-vpc-id"
+      Tags: 
+        - Key: Name
+          Value: !Sub "${Project}-SecurityGroupASG"
+        - Key: ProjectName
+          Value: !Ref ProjectName
+      GroupDescription: "AutoScalingGroup security group for Launch Template"
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          # CidrIp: 10.0.0.0/16
+          SourceSecurityGroupId: !GetAtt LoadBalancerSecurityGroup.GroupId
+          # SourceSecurityGroupId: !Ref LoadBalancerSecurityGroup
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          # CidrIp: 10.0.0.0/16
+          SourceSecurityGroupId: !GetAtt SecurityGroupBastion.GroupId
+          # SourceSecurityGroupId: !Ref LoadBalancerSecurityGroup
+      # SecurityGroupEgress:
+      #   - IpProtocol: -1
+      #     CidrIp: 0.0.0.0/0
+      #     Description: Allow all outbound traffic
+  S3IAMRole:
+    Type: AWS::IAM::Role
+    Properties:
+      # RoleName: !Ref Project
+      RoleName: !Sub ${Project}-IAMROLE
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: 'Allow'
+          Principal:
+            Service:
+            - 'ec2.amazonaws.com'
+          Action:
+          - 'sts:AssumeRole'
+      Policies:
+        - PolicyName: s3
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+            - Effect: Allow
+              Action:
+              - 's3:PutObject'
+              - 's3:GetObject'
+              Resource:
+                - !GetAtt S3Bucket.Arn
+  AppInstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Path: '/'
+      Roles:
+      - !Ref S3IAMRole
+  AppLaunchTemplate:
+    Type: AWS::EC2::LaunchTemplate
+    Properties:
+      LaunchTemplateName: !Sub "${Project}-LaunchTemplate"
+      LaunchTemplateData:
+        UserData:
+            Fn::Base64: |
+              #!/bin/bash
+              apt-get update -y
+              sudo apt-get install nginx -y
+              service nginx start
+        IamInstanceProfile:
+          Arn: !GetAtt
+            - AppInstanceProfile
+            - Arn
+        ImageId: !Ref AMI
+        KeyName: !Ref EC2KeyPairName
+        SecurityGroupIds:
+          - !Ref SecurityGroupASG
+        InstanceType: !Ref EC2InstanceType
+        BlockDeviceMappings:
+          - DeviceName: "/dev/sdk"
+            Ebs:
+              VolumeSize: '10'
+      # TagSpecifications:
+      #   - ResourceType: "launch-template"
+      #     Tags:
+      #       - Key: Name
+      #         Value: !Sub "${Project}-App-ASG"
+      #       - Key: Project
+      #         Value: !Sub "${ProjectName}"
+
+  AutoScalingGroup:
+    Type: AWS::AutoScaling::AutoScalingGroup
+    Properties:
+      VPCZoneIdentifier:
+        - Fn::ImportValue: 
+            !Sub "${Project}-private-subnets"
+      LaunchTemplate:
+        LaunchTemplateId: !Ref AppLaunchTemplate
+        Version: !GetAtt AppLaunchTemplate.LatestVersionNumber
+      MinSize: !Ref AsgMinSize
+      DesiredCapacity: !Ref AsgDesiredCapacity
+      MaxSize: !Ref AsgMaxSize
+      TargetGroupARNs:
+        - Ref: AppTargetGroup
+
+# Load Balancer resources
+  AppTargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      HealthCheckIntervalSeconds: 10
+      HealthCheckPath: /
+      HealthCheckProtocol: HTTP
+      HealthCheckTimeoutSeconds: 8
+      HealthyThresholdCount: 2
+      Port: 80
+      Protocol: HTTP
+      UnhealthyThresholdCount: 5
+      VpcId: 
+        Fn::ImportValue:
+          !Sub "${Project}-vpc-id"
+
+  LoadBalancerSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Allow external http access to load balancer
+      VpcId:
+        Fn::ImportValue:
+          !Sub "${Project}-vpc-id"
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+      Tags: 
+        - Key: Name
+          Value: !Sub "${Project}-LoadBalancerSecurityGroup"
+        - Key: ProjectName
+          Value: !Ref ProjectName
+
+  LoadBalancer:
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    Properties:
+      Subnets:
+      # When importing values from another template, each value is imported separately as below
+        - Fn::ImportValue: 
+            !Sub "${Project}-public-subnet1"
+        - Fn::ImportValue: 
+            !Sub "${Project}-public-subnet2"
+      SecurityGroups:
+        - Ref: LoadBalancerSecurityGroup
+  Listener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+      DefaultActions:
+      - Type: forward
+        TargetGroupArn:
+          Ref: AppTargetGroup
+      LoadBalancerArn:
+        Ref: LoadBalancer
+      Port: '80'
+      Protocol: HTTP
+  ListenerRule:
+      Type: AWS::ElasticLoadBalancingV2::ListenerRule
+      Properties:
+        Actions:
+        - Type: forward
+          TargetGroupArn: !Ref 'AppTargetGroup'
+        Conditions:
+        - Field: path-pattern
+          Values: [/]
+        ListenerArn: !Ref 'Listener'
+        Priority: 1
+
+# Bastion Host SG
+  SecurityGroupBastion:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      VpcId:
+        Fn::ImportValue:
+          !Sub "${Project}-vpc-id"
+      GroupDescription: "Bastion Host security group allowing ingress SSH access"
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          # CidrIp: 0.0.0.0/0
+          CidrIp: !Ref HomeIpAdress
+      Tags: 
+        - Key: Name
+          Value: !Sub "${Project}-SecurityGroupBastion"
+        - Key: ProjectName
+          Value: !Ref ProjectName
+
+# Bastion Host Instance
+  BastionHost:
+    Type: AWS::EC2::Instance
+    Properties:
+      AvailabilityZone: !Select [ 0, !GetAZs '' ]
+      ImageId: !Ref AMI
+      InstanceType: !Ref EC2InstanceType
+      KeyName: !Ref EC2KeyPairName
+      # NetworkInterfaces: 
+      #       # - AssociatePublicIpAddress: "true"
+      #       #   DeviceIndex: "0"
+      #       #   GroupSet: 
+      #       #     - Ref: "myVPCEC2SecurityGroup"
+      #       #   SubnetId: 
+      #       #     Ref: "PublicSubnet"
+      # SubnetId: !Select [ 0, !ImportValue 'PublicSubnets' ]
+      SubnetId:
+        Fn::ImportValue:
+          !Sub ${Project}-public-subnet1
+          # !Select [0, [!Sub "${Project}-public-subnets"]]
+      SecurityGroupIds: 
+        - !Ref SecurityGroupBastion
+      ## SecurityGroups parameter is only used when defining the a security group in the default VPC
+      ## [Default VPC] The names of the security groups. For a nondefault VPC, you must use security group IDs instead.
+      # SecurityGroups: 
+      #   - String
+      Tags:
+        - Key: Name
+          Value: !Sub "${Project}-BastionHost"
+        - Key: Project
+          Value: !Sub "${ProjectName}"
+
+  S3Bucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub "${BucketName}"
+      AccessControl: Private
+      VersioningConfiguration:
+        Status: Enabled
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: false
+        IgnorePublicAcls: false
+        BlockPublicPolicy: false
+        RestrictPublicBuckets: false
+
+Outputs: 
+  LoadBalancer:
+    Description: LoadBalancer URL
+    # Value: !GetAtt DNSName
+    Value: !Sub "http://${LoadBalancer.DNSName}"
+    Export: 
+      Name: LoadBalancer-DNSName

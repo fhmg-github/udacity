@@ -1,0 +1,7 @@
+CAPABILITY=CAPABILITY_NAMED_IAM
+
+# Region where you want to deploy/manage the infra
+REGION="us-east-1"
+
+# Profile you want to execute the CloudFormation commands
+PROFILE="IAC"

@@ -1,0 +1,42 @@
+[
+    {
+        "ParameterKey": "Project",
+        "ParameterValue": "IAC-UDACITY"
+    },
+    {
+        "ParameterKey": "ProjectName",
+        "ParameterValue": "FinalProject-Application"
+    },
+    {
+        "ParameterKey": "AMI",
+        "ParameterValue": "ami-0fc5d935ebf8bc3bc"
+    },
+    {
+        "ParameterKey": "EC2InstanceType",
+        "ParameterValue": "t2.micro"
+    },
+    {
+        "ParameterKey": "EC2KeyPairName",
+        "ParameterValue": "FinalProject-accessEC2Instances"
+    },
+    {
+        "ParameterKey": "HomeIpAdress",
+        "ParameterValue": "0.0.0.0/0"
+    },
+    {
+        "ParameterKey": "AsgMinSize",
+        "ParameterValue": "1"
+    },
+    {
+        "ParameterKey": "AsgDesiredCapacity",
+        "ParameterValue": "4"
+    },
+    {
+        "ParameterKey": "AsgMaxSize",
+        "ParameterValue": "4"
+    },
+    {
+        "ParameterKey": "BucketName",
+        "ParameterValue": "iac-udacity-final-project-0000"
+    }
+]
