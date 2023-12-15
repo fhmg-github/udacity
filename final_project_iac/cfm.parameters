@@ -1,8 +1,0 @@
-# Region where you want to deploy/manage the infra
-REGION="us-east-1"
-
-# When creating IAM resources, CAPABILITY_IAM or CAPABILITY_NAMED_IAM needs to be set
-CAPABILITY=CAPABILITY_NAMED_IAM
-
-# AWS profile you want to execute the CloudFormation commands
-PROFILE="IAC"
