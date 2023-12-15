@@ -60,6 +60,14 @@ The only configurable parameter to be able to access the EC2 instances are "Home
 
 Visit the CloudFormation page, select the FinalProjectStack-Udagram stack and go to "Outputs" tab.
 
-Visit: http://FinalP-LoadB-pDArSTJc7wml-365752579.us-east-1.elb.amazonaws.com
+# For the reviewer:
 
-To access the Udagram website created for this project. The website will be up and running until 5PM (PST).
+## Be aware that the project assignment section where the project was not approved, is written:
+## If the student provides a URL to verify his work is running properly, it will be a page that says “It works! Udagram, Udacity”
+## For the reviewer to see that the website is working, the infrastructure needs to be up and running for as long as it takes for it to be reviewed, thus incurring costs that will be deducted from the student's amount to finish the course, especially considering that the project requires 4 instances to be running in parallel due to Auto-Scaling group parameters.  
+
+## Please, find the new Loadbalancer URL below:
+
+Visit: http://FinalP-LoadB-pY7j6HCRY6K4-50157824.us-east-1.elb.amazonaws.com
+
+To access the Udagram website created for this project. The website will be up and running until the project is reviewed.

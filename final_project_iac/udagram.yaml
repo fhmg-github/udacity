@@ -97,6 +97,36 @@ Resources:
               apt-get update -y
               sudo apt-get install nginx -y
               service nginx start
+              sudo touch /var/www/html/index.html
+              sudo cat << EOF | sudo tee /var/www/html/index.html > /dev/null
+              <html lang="en">
+              <head>
+                <meta charset="UTF-8">
+                <title>Centered Text</title>
+                <style>
+                  body {
+                    display: flex;
+                    justify-content: center;
+                    align-items: center;
+                    height: 100vh;
+                    margin: 0;
+                  }
+                  .center-text {
+                    text-align: center;
+                    font-family: Arial, sans-serif;
+                    font-size: 24px;
+                  }
+                </style>
+              </head>
+              <body>
+                <div class="center-text">
+                  it works! Udagram, Udacity
+                </div>
+              </body>
+              </html>
+              EOF
+
+
         IamInstanceProfile:
           Arn: !GetAtt
             - AppInstanceProfile
